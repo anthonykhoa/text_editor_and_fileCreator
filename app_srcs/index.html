@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>assets</title>
+	<meta charset="utf-8">
+<style type="text/css" media="screen">
+.leftSide {
+	position: absolute;
+	top: 50px;
+	left: 0;
+	bottom: 0;
+	width: 300px;
+	box-sizing: border-box;
+}
+.filecontainer {
+	display: flex;
+	justify-content:
+	space-between;
+	padding: 0 10px;
+	margin-bottom: 5px;
+	background-color: #eee;
+}
+.file__open {
+	color: #9fa;
+	font-size: 25px;
+	padding: 0px;
+	margin: 0px;
+	cursor:pointer;
+}
+#editor { 
+	position: absolute;
+	top: 50px;
+	right: 0;
+	bottom: 0;
+	left: 300px;
+}
+.filename__input {
+	height: 40px;
+	width: 100%;
+	font-size: 15px;
+}
+.file__create-button {
+	width: 200px;
+	font-size: 15px;
+}
+.container {
+	display: flex;
+}
+.file {
+	cursor: pointer;
+}
+	</style>
+<head>
+<body>
+	<div class="container">
+		<input class="filename__input" type="text" placeholder="File Name">
+		<button class="file__create-button">Create File</button>
+	</div>
+
+	<div id="editor"></div>
+	<div class="leftSide">
+		<div class="filelist"></div>
+	</div>
+</body>
+<script src="ace.js" type="text/javascript" charset="utf-8"></script>
+<script>
+
+const findGetParameter = (parameterName) => {
+	const result = location.search.substr(1).split("&").find((item) => {
+		return item.split("=")[0] === parameterName
+	});
+	if (!result) return null
+	return decodeURIComponent(result.split("=")[1]);
+}
+
+const editor = ace.edit("editor");
+
+const fnameElement = document.querySelector('.filename__input')
+const createButton = document.querySelector('.file__create-button')
+const filelist = document.querySelector('.filelist')
+createButton.addEventListener('click', (e) => {
+	const name = fnameElement.value
+	//console.log(name);
+	const content = editor.getValue()
+	//console.log(content);
+	fetch('/assetExercise/api/files', {
+    	method: 'POST',
+    	credentials: 'include',
+    	headers: {
+      		'content-type': 'application/json'
+    	},
+    	body: JSON.stringify({
+      		name, content
+    	})
+	}).then( () => {
+		console.log("er")
+    	window.location.reload()
+  	})
+})
+
+const initialFileName = findGetParameter('file')
+
+if (initialFileName) {
+	fetch(`/assetExercise/api/files/${initialFileName}`).then(r => r.json()).then(data => {
+		//console.log(data)
+		editor.setValue(data)
+	})
+  	fnameElement.value = initialFileName
+}
+
+const File = function(name) {
+  	const element = document.createElement('div')
+  	element.innerHTML = `
+  	<div class="filecontainer">
+    	<p class="file">
+    		<a href="/assetExercise?file=${name}">${name}</a>
+    	</p>
+    	<p class="file__open">&#129488</p>
+  	</div>
+  	`
+  	filelist.append(element)
+  	const openButton = element.querySelector('.file__open')
+  	openButton.addEventListener('mousemove', () => {
+    	openButton.innerHTML = '&#129321'
+  	})
+  	openButton.addEventListener('mouseout', () => {
+    	openButton.innerHTML = '&#129488'
+  	})
+  	openButton.addEventListener('click', () => {
+    	window.open(`/assetExercise/userUploads/${name}`);
+  	})	//above sends request to file content
+}
+
+let allFiles = []
+fetch('/assetExercise/api/files').then(r => r.json()).then(data => {
+	allFiles = data.map(d => new File(d))
+})
+
+/* Dropzone stuff */
+
+const dropZone = document.querySelector('#dropZone')
+const dropZoneTitle = document.querySelector('#dropZone__title')
+
+const createDropEvent = (clear=true) => {
+	return (e) => {
+		if (clear) {
+			dropZone.classList.remove('focused')
+		} else {
+			dropZone.classList.add('focused')
+			dropZoneTitle.innerText = `Uploading ${e.dataTransfer.items.length} files`
+		}
+		e.preventDefault()
+		e.stopPropagation()
+		return false
+	}
+}
+
+const clearDropEvent = createDropEvent(true)
+
+document.body.addEventListener('dragenter', createDropEvent(false))
+document.body.addEventListener('dragover', createDropEvent(false))
+document.body.addEventListener('dragleave', clearDropEvent)
+document.body.addEventListener('drop', (e) => {
+	const files = e.target.files || e.dataTransfer.files
+	if (!files.length) {
+		return
+	}
+
+	const formData = new FormData()
+	for(let i = 0; i < files.length; i ++) {
+		formData.append('assets[]', files[i], files[i].name)
+	}
+	fetch('/assetExercise/api/assets', {
+		method: 'POST',
+		body: formData
+	}).then( r => r.json() ).then(arr => {
+		window.location.reload()
+	})
+	return clearDropEvent(e)
+})
+
+</script>
+</html>

@@ -1,0 +1,21 @@
+{
+  "name": "noob-asset-creation.freedomains.dev",
+  "version": "1.0.0",
+  "description": "",
+  "main": "deploy.config.js",
+  "scripts": {
+    "start:myproxy": "node app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "myproxy@freedomains.dev:/home/myproxy/noob-asset-creation.freedomains.dev"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1",
+    "file-system": "^2.2.2"
+  }
+}
